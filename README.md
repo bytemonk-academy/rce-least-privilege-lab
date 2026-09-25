@@ -19,18 +19,9 @@ Everything runs locally in Docker by default. No AWS account and no cloud cost. 
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    C[Candidate<br/>no login] -->|POST /api/applications| APP
-    R[Recruiter<br/>HTTP Basic] -->|GET /api/applications| APP
-    subgraph APP[recruit-app process]
-      CTRL[ApplicationController] --> STORE[ResumeStorageService]
-      CTRL --> PREV[ResumePreviewService<br/>PDF parsing, pre-auth]
-    end
-    APP -->|app DB account| DB[(PostgreSQL)]
-    APP -->|app IAM role<br/>temporary credentials| RB[(S3: resumes)]
-    APP -. broad.json only .-> AB[(S3: HR employee archive)]
-```
+![Architecture: candidate and recruiter use the website, which calls the Spring Boot API; the API saves candidate data in PostgreSQL and uploads and retrieves resumes in an S3 bucket](docs/architecture.png)
+
+Not shown in the diagram: a second bucket, the **HR employee archive**. The recruitment app never needs it, but the `broad.json` policy lets the app's IAM role read it anyway. That accidental access is what the lab is about.
 
 The recruiter's login protects the controller. It does not protect S3. Every S3 call the process makes is signed with the **app role's** temporary credentials, whichever class makes it. So the question that matters is: *what does that role allow?*
 
