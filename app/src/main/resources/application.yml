@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: recruit-app
+  # Written by `lab.py setup` for the local emulator: role ARN, bucket name, emulator keys.
+  config:
+    import: optional:file:${LAB_STATE_DIR:../.lab}/app.properties
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/recruit}
+    username: ${SPRING_DATASOURCE_USERNAME:recruit_app}
+    password: ${SPRING_DATASOURCE_PASSWORD:recruit_app_local_only}
+  sql:
+    init:
+      mode: always
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 3MB
+
+lab:
+  aws:
+    region: ${AWS_REGION:us-east-1}
+    # Blank = real AWS. The Docker Compose setup points this at the local emulator.
+    endpoint: ${LAB_AWS_ENDPOINT:}
+    # Blank = use the default credentials chain (EC2 instance profile).
+    role-arn: ${LAB_APP_ROLE_ARN:}
+    base-access-key-id:
+    base-secret-access-key:
+  storage:
+    resume-bucket: ${LAB_RESUME_BUCKET:}
+  preview:
+    enabled: ${LAB_PREVIEW_ENABLED:true}
+  recruiter:
+    username: ${RECRUITER_USERNAME:recruiter}
+    password: ${RECRUITER_PASSWORD:change-me-recruiter}
+
+server:
+  error:
+    include-message: always

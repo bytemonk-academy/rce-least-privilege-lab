@@ -1,0 +1,43 @@
+# Optional: run the app on an EC2 instance against REAL AWS, the way the video describes.
+#
+# Prerequisites (see README, "Optional: run the app on EC2"):
+#   - `scripts/lab setup` done with LAB_TARGET=aws (creates buckets, role, instance profile)
+#   - the instance launched with instance profile rce-lab-recruit-app-profile
+#   - instance metadata hop limit set to 2 so containers can reach IMDSv2
+#
+# Usage on the instance:
+#   export LAB_RESUME_BUCKET=<resume_bucket from `scripts/lab status`>
+#   export AWS_REGION=<your region>
+#   docker compose -f docker-compose.aws.yml up -d --build
+name: rce-lab-aws
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: recruit
+      POSTGRES_USER: recruit_app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-recruit_app_change_me}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recruit_app -d recruit"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: ./app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/recruit
+      SPRING_DATASOURCE_USERNAME: recruit_app
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-recruit_app_change_me}
+      AWS_REGION: ${AWS_REGION:?set AWS_REGION}
+      LAB_RESUME_BUCKET: ${LAB_RESUME_BUCKET:?set LAB_RESUME_BUCKET}
+      # No endpoint and no role ARN: the SDK uses the EC2 instance profile's temporary credentials.
+      LAB_AWS_ENDPOINT: ""
+      LAB_APP_ROLE_ARN: ""
+      RECRUITER_PASSWORD: ${RECRUITER_PASSWORD:?set RECRUITER_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy

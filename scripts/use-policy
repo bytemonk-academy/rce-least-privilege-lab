@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Attach infra/iam/<name>.json to the app role.
+# Usage: scripts/use-policy broad|restricted
+exec "$(dirname "$0")/lab" use-policy "$@"

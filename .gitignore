@@ -1,0 +1,16 @@
+# Lab state: generated bucket names, and local-emulator keys (never real AWS keys)
+.lab/
+
+# Build output
+app/target/
+*.class
+
+# Python
+__pycache__/
+.venv/
+
+# Editors and OS
+.idea/
+.vscode/
+*.iml
+.DS_Store

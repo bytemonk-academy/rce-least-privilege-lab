@@ -1,0 +1,5 @@
+# SYNTHETIC DATA for the ByteMonk least-privilege lab. None of these people exist.
+employee_id,name,office,assignment,clearance_note
+E-0001,Alex Example,Field Office A,Cyber task force (synthetic),demo-only
+E-0002,Sam Placeholder,Field Office B,Counterintelligence liaison (synthetic),demo-only
+E-0003,Riley Sample,Headquarters,Background investigations (synthetic),demo-only

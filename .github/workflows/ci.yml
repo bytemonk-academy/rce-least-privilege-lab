@@ -1,0 +1,64 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  policy-test:
+    name: IAM policy test (moto)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "moto[server]==5.1.22" -r lab/requirements.txt
+      - name: Start the AWS emulator
+        run: |
+          moto_server -H 127.0.0.1 -p 5000 > moto.log 2>&1 &
+          sleep 3
+      - name: Broad policy lets the app read the employee archive
+        run: |
+          python lab/lab.py setup
+          python lab/lab.py check-access --expect broad
+      - name: Restricted policy denies it
+        run: |
+          python lab/lab.py use-policy restricted
+          python lab/lab.py check-access --expect restricted
+
+  app-build:
+    name: Build and test the Spring Boot app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - run: mvn -B -f app/pom.xml verify
+
+  end-to-end:
+    name: Docker Compose end to end
+    needs: [policy-test, app-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose up -d --build
+      - name: Wait for the app
+        run: |
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8080/ > /dev/null && exit 0
+            sleep 2
+          done
+          exit 1
+      - run: scripts/smoke-test
+      - run: scripts/demo
+        env:
+          CI: "true"
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs
+      - if: always()
+        run: docker compose down -v

@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Run a lab.py command against the chosen target.
+#   LAB_TARGET=local (default)  runs inside Docker against the local emulator
+#   LAB_TARGET=aws              runs lab.py with your own Python and AWS credentials
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+if [ "${LAB_TARGET:-local}" = "aws" ]; then
+  exec python3 lab/lab.py --target aws "$@"
+fi
+# -T when there is no terminal (CI, pipes), so Docker does not try to allocate one.
+TTY_FLAG=""
+[ -t 0 ] && [ -t 1 ] || TTY_FLAG="-T"
+exec docker compose run --rm $TTY_FLAG lab "$@"

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Read one resume and one employee document with the app role's credentials.
+# Usage: scripts/check-access [--expect broad|restricted]
+exec "$(dirname "$0")/lab" check-access "$@"

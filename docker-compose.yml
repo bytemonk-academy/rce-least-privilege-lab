@@ -1,0 +1,75 @@
+# Local lab: everything runs on your machine. No AWS account, no cloud cost.
+#
+#   postgres  application database
+#   aws       moto, an emulator of the AWS APIs (S3, IAM, STS) with IAM policy enforcement ON
+#   lab       one-shot: creates buckets, fixtures and the app's IAM role (lab/lab.py setup)
+#   app       the Spring Boot recruitment app on http://localhost:8080
+name: rce-lab
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: recruit
+      POSTGRES_USER: recruit_app
+      POSTGRES_PASSWORD: recruit_app_local_only
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recruit_app -d recruit"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  aws:
+    image: motoserver/moto:5.1.22
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/moto-api/')"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  lab:
+    build: ./lab
+    command: ["setup", "--if-needed"]
+    environment:
+      LAB_TARGET: local
+      LAB_AWS_ENDPOINT: http://aws:5000
+      AWS_REGION: us-east-1
+      LAB_STATE_DIR: /lab-state
+      LAB_IAM_DIR: /repo/infra/iam
+      LAB_FIXTURES_DIR: /repo/fixtures
+    volumes:
+      - ./.lab:/lab-state
+      - ./infra:/repo/infra:ro
+      - ./fixtures:/repo/fixtures:ro
+    depends_on:
+      aws:
+        condition: service_healthy
+
+  app:
+    build: ./app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/recruit
+      SPRING_DATASOURCE_USERNAME: recruit_app
+      SPRING_DATASOURCE_PASSWORD: recruit_app_local_only
+      LAB_AWS_ENDPOINT: http://aws:5000
+      AWS_REGION: us-east-1
+      LAB_STATE_DIR: /lab-state
+      LAB_PREVIEW_ENABLED: "true"
+      RECRUITER_PASSWORD: change-me-recruiter
+    volumes:
+      - ./.lab:/lab-state:ro
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      lab:
+        condition: service_completed_successfully

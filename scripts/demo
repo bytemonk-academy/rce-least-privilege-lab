@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# The whole experiment from the video, start to finish:
+#   broad policy -> both reads succeed -> restricted policy -> archive read is denied.
+set -euo pipefail
+cd "$(dirname "$0")"
+
+pause() { [ -t 0 ] && [ -z "${CI:-}" ] && read -r -p $'\nPress Enter to continue... ' || true; echo; }
+
+echo "== Step 1: the app role has the broad policy (resume bucket + employee archive)"
+./use-policy broad
+./check-access --expect broad
+pause
+
+echo "== Step 2: remove the archive access and repeat the exact same test"
+./use-policy restricted
+./check-access --expect restricted
+echo
+echo "Least privilege: the resume read still works, the employee archive read is denied."

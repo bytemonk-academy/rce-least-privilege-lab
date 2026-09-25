@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# End-to-end check of the running app (docker compose up must be running).
+# Applies with the synthetic resume, then checks the recruiter endpoints.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+BASE="${BASE_URL:-http://localhost:8080}"
+AUTH="recruiter:${RECRUITER_PASSWORD:-change-me-recruiter}"
+PDF="fixtures/resumes/jane-candidate-resume.pdf"
+pass() { printf '  \033[32mPASS\033[0m %s\n' "$1"; }
+fail() { printf '  \033[31mFAIL\033[0m %s\n' "$1"; exit 1; }
+
+echo "Smoke test against $BASE"
+
+body=$(curl -s -w '\n%{http_code}' -F name="Jane Candidate" -F email=jane@example.com \
+  -F position="Senior Software Engineer" -F "resume=@$PDF;type=application/pdf" "$BASE/api/applications")
+code=$(tail -n1 <<<"$body"); json=$(head -n1 <<<"$body")
+[ "$code" = "201" ] && pass "candidate upload without login -> 201 $json" || fail "upload returned $code: $json"
+id=$(sed -E 's/.*"id":([0-9]+).*/\1/' <<<"$json")
+
+code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/applications")
+[ "$code" = "401" ] && pass "list applications without login -> 401" || fail "expected 401, got $code"
+
+list=$(curl -s -u "$AUTH" "$BASE/api/applications")
+grep -q "SYNTHETIC RESUME" <<<"$list" && pass "recruiter sees the application and its PDF preview" \
+  || fail "preview text missing: $list"
+
+code=$(curl -s -u "$AUTH" -o /tmp/rce-lab-resume.pdf -w '%{http_code}' "$BASE/api/applications/$id/resume")
+[ "$code" = "200" ] && head -c 5 /tmp/rce-lab-resume.pdf | grep -q '%PDF-' \
+  && pass "recruiter downloads the resume from S3" || fail "download returned $code"
+
+code=$(curl -s -o /dev/null -w '%{http_code}' -F name=x -F email=x@example.com -F position=x \
+  -F "resume=@README.md;type=application/pdf" "$BASE/api/applications")
+[ "$code" = "400" ] && pass "non-PDF upload rejected -> 400" || fail "expected 400, got $code"
+
+echo "All smoke tests passed."
