@@ -16,7 +16,7 @@ jobs:
       - run: pip install "moto[server]==5.1.22" "awscli>=1.36,<2" -r lab/requirements.txt
       - name: Start the AWS emulator
         run: |
-          moto_server -H 127.0.0.1 -p 5000 > moto.log 2>&1 &
+          moto_server -H 127.0.0.1 -p 5050 > moto.log 2>&1 &
           sleep 3
       - name: Broad policy lets the app read the employee archive
         run: |

@@ -42,7 +42,7 @@ FIXTURES_DIR = Path(os.environ.get("LAB_FIXTURES_DIR", ROOT / "fixtures"))
 STATE_DIR = Path(os.environ.get("LAB_STATE_DIR", ROOT / ".lab"))
 
 TARGET = os.environ.get("LAB_TARGET", "local")
-ENDPOINT = os.environ.get("LAB_AWS_ENDPOINT", "http://localhost:5000")
+ENDPOINT = os.environ.get("LAB_AWS_ENDPOINT", "http://localhost:5050")
 REGION = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "us-east-1"
 PREFIX = os.environ.get("LAB_NAME_PREFIX", "rce-lab")
 

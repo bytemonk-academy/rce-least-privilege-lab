@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recruiter Console · ByteMonk Labs</title>
+  <link rel="icon" href="/assets/favicon.png">
+  <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">
+      <img src="/assets/logo-red.png" alt="ByteMonk logo">
+      <div><div class="name">BYTEMONK LABS</div><div class="sub">Recruiter Console</div></div>
+    </a>
+    <nav class="nav">
+      <a href="/">Apply</a>
+      <a class="active" href="/recruiter.html">Recruiter</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <!-- Sign in -->
+    <section id="login-view" style="max-width:440px;margin:40px auto 0">
+      <div class="eyebrow">Restricted area</div>
+      <h1>Recruiter sign in</h1>
+      <p class="lead">Only recruiters can see applications and download resumes.</p>
+      <form id="login" class="card glow" autocomplete="off">
+        <label for="username">Username</label>
+        <input id="username" type="text" required value="recruiter">
+        <label for="password">Password</label>
+        <input id="password" type="password" required placeholder="change-me-recruiter">
+        <button class="btn" id="login-btn" type="submit">Sign in</button>
+        <div id="login-result" class="result" role="status"></div>
+      </form>
+    </section>
+
+    <!-- Console -->
+    <section id="console-view" class="hidden">
+      <div class="toolbar">
+        <div>
+          <div class="eyebrow">Recruiter console</div>
+          <h1 style="margin-bottom:0">Applications <span id="count" class="mono" style="color:var(--faint);font-size:22px"></span></h1>
+        </div>
+        <div class="who">
+          <span class="badge auth" id="who">Signed in</span>
+          <button class="btn ghost small" id="refresh" type="button">Refresh</button>
+          <button class="btn ghost small" id="logout" type="button">Sign out</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card" style="padding:8px 10px">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Candidate</th><th>Position</th><th>Submitted</th></tr></thead>
+              <tbody id="rows"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <aside class="card" id="detail">
+          <div id="detail-empty" class="empty" style="padding:40px 8px">Select an application to review it.</div>
+          <div id="detail-body" class="hidden">
+            <h2 id="d-name"></h2>
+            <dl class="kv">
+              <dt>Email</dt><dd id="d-email"></dd>
+              <dt>Position</dt><dd id="d-position"></dd>
+              <dt>S3 key</dt><dd class="mono" id="d-key" style="font-size:12px"></dd>
+            </dl>
+            <div class="note" style="margin-bottom:10px">
+              <div class="tag">Preview · extracted by the PDF library before login</div>
+            </div>
+            <pre class="preview" id="d-preview"></pre>
+            <button class="btn" id="d-open" type="button">Open resume from S3</button>
+            <iframe class="pdf hidden" id="d-pdf" title="Resume PDF"></iframe>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer>ByteMonk Labs · demo app with synthetic data</footer>
+  <script src="/assets/recruiter.js"></script>
+</body>
+</html>

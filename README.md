@@ -60,7 +60,9 @@ This starts PostgreSQL, the AWS emulator, runs the one-time lab setup (buckets, 
 
 Open <http://localhost:8080>, choose `fixtures/resumes/jane-candidate-resume.pdf`, and submit. No login needed: that is the public upload.
 
-Then, as the recruiter:
+Then open the **Recruiter Console** at <http://localhost:8080/recruiter.html> and sign in as `recruiter` / `change-me-recruiter`. Click an application to see the text the PDF library pulled out of the resume, and open the PDF straight from S3.
+
+The same thing from the command line:
 
 ```bash
 curl -u recruiter:change-me-recruiter http://localhost:8080/api/applications
@@ -128,7 +130,7 @@ The `aws` container runs [moto](https://github.com/getmoto/moto), an open-source
 
 | | Local emulator | Real AWS |
 |---|---|---|
-| Endpoint | `http://localhost:5000` from your machine, `http://aws:5000` between containers | Regional AWS endpoints |
+| Endpoint | `http://localhost:5050` from your machine, `http://aws:5000` between containers | Regional AWS endpoints |
 | Account ID | `123456789012` (moto's fixed demo account) | Your account |
 | Region | `us-east-1` | Whatever you choose |
 | Your identity | IAM user `rce-lab-operator`, created by setup with full access to the lab | Your own AWS credentials |
@@ -173,7 +175,7 @@ scripts/aws-local --as-app s3 cp /repo/fixtures/resumes/jane-candidate-resume.pd
 
 (The container sees the repo's `fixtures/` folder at `/repo/fixtures`. Other files on your machine are not visible to it.)
 
-Using the AWS CLI you already have? Point it at the emulator with `--endpoint-url http://localhost:5000` and the operator keys from `.lab/state-local.json`. On Windows without Bash, use `docker compose run --rm lab aws ...` in place of `scripts/aws-local ...`.
+Using the AWS CLI you already have? Point it at the emulator with `--endpoint-url http://localhost:5050` and the operator keys from `.lab/state-local.json`. On Windows without Bash, use `docker compose run --rm lab aws ...` in place of `scripts/aws-local ...`.
 
 **Reset.** `docker compose down && docker compose up -d` recreates the emulator and reruns setup (new keys, broad policy, fresh fixtures). Resumes uploaded through the app are lost, because the emulator keeps everything in memory.
 
@@ -312,7 +314,7 @@ docker-compose.aws.yml   optional: app on EC2 against real AWS
 
 ## Troubleshooting
 
-- **Port 5000 already in use (macOS).** AirPlay Receiver uses it. Turn it off in System Settings > General > AirDrop & Handoff, or change `"5000:5000"` to `"5050:5000"` in `docker-compose.yml`. The containers talk to each other on the internal network either way.
+- **Port already in use.** The emulator is published on host port 5050 (macOS uses 5000 for AirPlay Receiver) and the app on 8080. If either is taken, pick another port for the emulator with `LAB_EMULATOR_PORT=5151 docker compose up -d`, or change `"8080:8080"` in `docker-compose.yml`. Containers talk to each other on the internal network either way.
 - **The app fails with an STS or credentials error after restarting only the emulator.** The emulator keeps state in memory. Run `docker compose down && docker compose up -d` to recreate everything together.
 - **`check-access` says "No lab state".** Run `docker compose up -d` (local) or `scripts/lab setup` (AWS) first.
 - **Real AWS result looks stale after `use-policy`.** IAM changes can take a few seconds. Rerun `scripts/check-access`.

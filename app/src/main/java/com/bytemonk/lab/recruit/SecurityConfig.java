@@ -30,7 +30,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // stateless JSON API, no browser session cookies
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET, "/", "/index.html").permitAll()
+                        // Static pages. The recruiter page is public HTML; its data calls still need a login.
+                        .requestMatchers(HttpMethod.GET, "/", "/index.html", "/recruiter.html",
+                                "/assets/**", "/favicon.ico").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/applications").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/applications", "/api/applications/**")
                         .hasRole("RECRUITER")
