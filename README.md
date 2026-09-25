@@ -122,6 +122,63 @@ rm -rf .lab        # generated state (may need sudo on Linux, Docker created it)
 
 ---
 
+## How the local AWS emulator works
+
+The `aws` container runs [moto](https://github.com/getmoto/moto), an open-source emulator of the AWS APIs. The lab uses three of them: S3, IAM and STS. Your code and the AWS SDKs talk to it exactly as they would to AWS; only the endpoint URL changes.
+
+| | Local emulator | Real AWS |
+|---|---|---|
+| Endpoint | `http://localhost:5000` from your machine, `http://aws:5000` between containers | Regional AWS endpoints |
+| Account ID | `123456789012` (moto's fixed demo account) | Your account |
+| Region | `us-east-1` | Whatever you choose |
+| Your identity | IAM user `rce-lab-operator`, created by setup with full access to the lab | Your own AWS credentials |
+| App identity | Role `rce-lab-recruit-app-role`, assumed through STS | Same role, from the EC2 instance profile |
+| Policy checks | **On.** Every request is signed and checked against IAM policies | On |
+| Data | In memory. Gone when the `aws` container stops | Stays until you run cleanup |
+
+**How setup turns on IAM checks.** moto accepts every request by default. `lab.py setup` builds the buckets, files, role and operator user with checks off, then turns them on through moto's `/moto-api/reset-auth` endpoint. From then on, requests with an unknown key or a bad signature are rejected, and anything the caller's policy does not allow fails with `AccessDenied`. That is why the restricted policy produces a real denial.
+
+**Where the credentials live.** Setup writes the operator's emulator keys to `.lab/state-local.json` and the app's settings to `.lab/app.properties` (git-ignored). They only work against the emulator on your machine. They are not AWS credentials.
+
+### Explore it with the AWS CLI
+
+`scripts/aws-local` runs the AWS CLI inside the lab container with the right endpoint and keys, so you don't need to install anything. Everything after the script name is passed to `aws`.
+
+As the **lab operator** (full access), look around:
+
+```bash
+scripts/aws-local s3 ls
+scripts/aws-local s3 ls s3://rce-lab-resumes-123456789012-us-east-1 --recursive
+scripts/aws-local iam get-role-policy --role-name rce-lab-recruit-app-role --policy-name recruit-app-s3-access
+```
+
+With `--as-app`, the CLI gets fresh temporary credentials for the **app's role**. Think of this as a shell inside the compromised app:
+
+```bash
+scripts/aws-local --as-app sts get-caller-identity
+scripts/aws-local --as-app s3 ls        # AccessDenied: the role can't list buckets...
+scripts/aws-local --as-app s3api get-object \
+  --bucket rce-lab-hr-archive-123456789012-us-east-1 \
+  --key employees/employee-records-SYNTHETIC.csv /dev/stdout   # ...but can it read this?
+```
+
+Run the last command before and after `scripts/use-policy restricted`. With the broad policy it prints the synthetic employee records. With the restricted policy it fails with `AccessDenied`.
+
+Two things to notice. Not being able to list buckets does not protect the archive: an attacker who knows or guesses a bucket name only needs `s3:GetObject`. And the role can still upload to the resume bucket, because the app needs that to work:
+
+```bash
+scripts/aws-local --as-app s3 cp /repo/fixtures/resumes/jane-candidate-resume.pdf \
+  s3://rce-lab-resumes-123456789012-us-east-1/resumes/uploaded-from-cli.pdf
+```
+
+(The container sees the repo's `fixtures/` folder at `/repo/fixtures`. Other files on your machine are not visible to it.)
+
+Using the AWS CLI you already have? Point it at the emulator with `--endpoint-url http://localhost:5000` and the operator keys from `.lab/state-local.json`. On Windows without Bash, use `docker compose run --rm lab aws ...` in place of `scripts/aws-local ...`.
+
+**Reset.** `docker compose down && docker compose up -d` recreates the emulator and reruns setup (new keys, broad policy, fresh fixtures). Resumes uploaded through the app are lost, because the emulator keeps everything in memory.
+
+**How close to real AWS is this?** Close enough for this lab: SigV4 signatures, STS role sessions, and `Allow` statements scoped to object ARNs all behave the same way. moto does not reproduce everything, though. Some condition keys, SCPs, permission boundaries and KMS key policies are simplified or missing, and there is no IAM propagation delay. When a result matters, confirm it in a sandbox account (next sections).
+
 ## What to look at in the code
 
 Follow three things, in this order. They are the same three shown in the video.
@@ -172,6 +229,7 @@ scripts/lab setup                           # buckets, synthetic files, role wit
 scripts/check-access --expect broad
 scripts/use-policy restricted               # waits 15s for IAM to propagate
 scripts/check-access --expect restricted
+scripts/aws-local --as-app sts get-caller-identity   # your own AWS CLI, as the app role
 scripts/lab cleanup                         # deletes everything the lab created
 ```
 
@@ -246,7 +304,7 @@ app/                     Spring Boot recruitment app (Java 21, Maven)
 infra/iam/               broad.json, restricted.json, trust-policy.json
 lab/lab.py               setup, check-access, use-policy, status, cleanup
 fixtures/                synthetic resume PDF and synthetic employee CSV
-scripts/                 check-access, use-policy, demo, smoke-test, lab
+scripts/                 check-access, use-policy, aws-local, demo, smoke-test, lab
 docker-compose.yml       local lab (Postgres, AWS emulator, setup, app)
 docker-compose.aws.yml   optional: app on EC2 against real AWS
 .github/workflows/ci.yml builds the app and runs the full experiment on every push

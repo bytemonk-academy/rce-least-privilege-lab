@@ -13,7 +13,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install "moto[server]==5.1.22" -r lab/requirements.txt
+      - run: pip install "moto[server]==5.1.22" "awscli>=1.36,<2" -r lab/requirements.txt
       - name: Start the AWS emulator
         run: |
           moto_server -H 127.0.0.1 -p 5000 > moto.log 2>&1 &
@@ -26,6 +26,15 @@ jobs:
         run: |
           python lab/lab.py use-policy restricted
           python lab/lab.py check-access --expect restricted
+      - name: AWS CLI wrapper works as operator and as the app role
+        run: |
+          python lab/lab.py aws s3 ls
+          python lab/lab.py aws --as-app sts get-caller-identity
+          if python lab/lab.py aws --as-app s3api get-object \
+               --bucket rce-lab-hr-archive-123456789012-us-east-1 \
+               --key employees/employee-records-SYNTHETIC.csv /tmp/out.csv; then
+            echo "expected AccessDenied with the restricted policy"; exit 1
+          fi
 
   app-build:
     name: Build and test the Spring Boot app

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Run the AWS CLI against the lab. No AWS CLI install needed for the local target (it runs in Docker).
+#
+#   scripts/aws-local s3 ls                                   as the lab operator (full access)
+#   scripts/aws-local --as-app sts get-caller-identity        as the recruitment app's role
+#
+# With LAB_TARGET=aws it uses your own AWS CLI and credentials instead.
+exec "$(dirname "$0")/lab" aws "$@"

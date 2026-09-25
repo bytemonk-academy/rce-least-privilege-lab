@@ -17,6 +17,8 @@ Usage
   python lab.py check-access [--expect broad|restricted]
   python lab.py use-policy restricted
   python lab.py status
+  python lab.py aws s3 ls                       (AWS CLI as the lab operator)
+  python lab.py aws --as-app s3 ls s3://<bucket> (AWS CLI as the app role)
   python lab.py cleanup
 """
 
@@ -294,12 +296,12 @@ def write_app_properties(state: dict) -> None:
 # check-access
 # --------------------------------------------------------------------------- #
 
-def assume_app_role(state: dict) -> boto3.Session:
+def assume_app_role(state: dict, session_name: str = "check-access") -> boto3.Session:
     """Get fresh temporary credentials for the app role, like an EC2 instance profile would."""
     sts = client(operator_session(state), "sts")
     for attempt in range(5):
         try:
-            creds = sts.assume_role(RoleArn=state["role_arn"], RoleSessionName="check-access",
+            creds = sts.assume_role(RoleArn=state["role_arn"], RoleSessionName=session_name,
                                     DurationSeconds=900)["Credentials"]
             break
         except ClientError as err:
@@ -375,6 +377,35 @@ def cmd_use_policy(args) -> None:
     print("Next: run check-access again")
 
 
+def cmd_aws(args) -> None:
+    """Run the AWS CLI as the lab operator, or with --as-app, as the recruitment app's role."""
+    state = load_state()
+    env = dict(os.environ)
+    if args.as_app:
+        creds = assume_app_role(state, "aws-cli").get_credentials().get_frozen_credentials()
+        env.update(AWS_ACCESS_KEY_ID=creds.access_key, AWS_SECRET_ACCESS_KEY=creds.secret_key,
+                   AWS_SESSION_TOKEN=creds.token)
+        env.pop("AWS_PROFILE", None)
+        print(color(f"[running as {state['role_name']}]", DIM), file=sys.stderr)
+    elif is_local():
+        env.update(AWS_ACCESS_KEY_ID=state["operator"]["access_key_id"],
+                   AWS_SECRET_ACCESS_KEY=state["operator"]["secret_access_key"])
+        env.pop("AWS_SESSION_TOKEN", None)
+        env.pop("AWS_PROFILE", None)
+    if is_local():
+        env["AWS_ENDPOINT_URL"] = ENDPOINT
+    env.setdefault("AWS_DEFAULT_REGION", REGION)
+    env.setdefault("AWS_PAGER", "")
+    cli_args = args.aws_args[1:] if args.aws_args[:1] == ["--"] else args.aws_args
+    if not cli_args:
+        sys.exit("Usage: lab.py aws [--as-app] <aws cli arguments>, for example: lab.py aws s3 ls")
+    try:
+        os.execvpe("aws", ["aws", *cli_args], env)
+    except FileNotFoundError:
+        sys.exit("The AWS CLI is not installed. Use scripts/aws-local (it runs inside Docker) "
+                 "or install it: pip install awscli")
+
+
 def cmd_status(args) -> None:
     state = load_state()
     visible = {k: v for k, v in state.items() if k != "operator"}
@@ -437,6 +468,11 @@ def main() -> None:
     p = sub.add_parser("use-policy", help="attach infra/iam/<name>.json to the app role")
     p.add_argument("name", help="broad or restricted")
     p.set_defaults(fn=cmd_use_policy)
+
+    p = sub.add_parser("aws", help="run the AWS CLI against the lab (as operator, or --as-app)")
+    p.add_argument("--as-app", action="store_true", help="use the app role's temporary credentials")
+    p.add_argument("aws_args", nargs=argparse.REMAINDER, help="arguments for the aws command")
+    p.set_defaults(fn=cmd_aws)
 
     sub.add_parser("status", help="show lab resources").set_defaults(fn=cmd_status)
     sub.add_parser("cleanup", help="delete everything the lab created").set_defaults(fn=cmd_cleanup)
