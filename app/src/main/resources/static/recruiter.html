@@ -11,13 +11,14 @@
   <header class="topbar">
     <a class="brand" href="/">
       <img src="/assets/logo-red.png" alt="ByteMonk logo">
-      <div><div class="name">BYTEMONK LABS</div><div class="sub">Recruiter Console</div></div>
+      <div><div class="name">ByteMonk Labs</div><div class="sub">Recruiter console</div></div>
     </a>
     <nav class="nav">
-      <a href="/">Apply</a>
-      <a class="active" href="/recruiter.html">Recruiter</a>
+      <a href="/">Open roles</a>
+      <a class="active" href="/recruiter.html">Recruiter sign in</a>
     </nav>
   </header>
+  <div class="labstrip"><span class="tag">LAB</span> Training app for a ByteMonk security lesson. Synthetic data only.</div>
 
   <main class="wrap">
     <!-- Sign in -->
@@ -25,7 +26,7 @@
       <div class="eyebrow">Restricted area</div>
       <h1>Recruiter sign in</h1>
       <p class="lead">Only recruiters can see applications and download resumes.</p>
-      <form id="login" class="card glow" autocomplete="off">
+      <form id="login" class="card" autocomplete="off">
         <label for="username">Username</label>
         <input id="username" type="text" required value="recruiter">
         <label for="password">Password</label>
@@ -80,7 +81,7 @@
     </section>
   </main>
 
-  <footer>ByteMonk Labs · demo app with synthetic data</footer>
+  <footer>ByteMonk Labs demo · synthetic data only</footer>
   <script src="/assets/recruiter.js"></script>
 </body>
 </html>

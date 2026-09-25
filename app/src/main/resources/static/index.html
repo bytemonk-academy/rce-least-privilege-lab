@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Careers Portal · ByteMonk Labs</title>
+  <title>Apply · ByteMonk Labs Careers</title>
   <link rel="icon" href="/assets/favicon.png">
   <link rel="stylesheet" href="/assets/app.css">
 </head>
@@ -11,70 +11,68 @@
   <header class="topbar">
     <a class="brand" href="/">
       <img src="/assets/logo-red.png" alt="ByteMonk logo">
-      <div><div class="name">BYTEMONK LABS</div><div class="sub">Careers Portal</div></div>
+      <div><div class="name">ByteMonk Labs</div><div class="sub">Careers</div></div>
     </a>
     <nav class="nav">
-      <a class="active" href="/">Apply</a>
-      <a href="/recruiter.html">Recruiter</a>
+      <a href="/">Open roles</a>
+      <a class="outline" href="/recruiter.html">Recruiter sign in</a>
     </nav>
   </header>
+  <div class="labstrip"><span class="tag">LAB</span> Training app for a ByteMonk security lesson. Synthetic data only, not a real job posting.</div>
 
-  <main class="wrap">
-    <div class="grid">
-      <section>
-        <div class="eyebrow">Open role · Remote</div>
-        <h1>Senior Software Engineer</h1>
-        <p class="lead">Upload your resume and our recruiters will review it. No account needed.</p>
+  <main class="narrow">
+    <section class="card form">
+      <form id="apply" autocomplete="off" novalidate>
+        <h1>Apply for this role</h1>
+        <p class="lead">Tell us a little about yourself.</p>
 
-        <form id="apply" class="card glow" autocomplete="off">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-            <h2 style="margin:0">Your application</h2>
-            <span class="badge public">Public · no login</span>
+        <div class="row2">
+          <div>
+            <label for="name">Full name</label>
+            <input id="name" name="name" type="text" required value="Jane Candidate">
           </div>
-          <div class="row2">
-            <div>
-              <label for="name">Full name</label>
-              <input id="name" name="name" type="text" required value="Jane Candidate">
-            </div>
-            <div>
-              <label for="email">Email</label>
-              <input id="email" name="email" type="email" required value="jane@example.com">
-            </div>
+          <div>
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" required value="jane@example.com">
           </div>
-          <label for="position">Position</label>
-          <input id="position" name="position" type="text" required value="Senior Software Engineer">
-
-          <label>Resume (PDF, up to 2 MB)</label>
-          <label class="file" for="resume">
-            <span class="icon">[PDF]</span>
-            <span id="file-label">Choose a file, e.g. fixtures/resumes/jane-candidate-resume.pdf</span>
-            <input id="resume" name="resume" type="file" accept="application/pdf" required>
-          </label>
-
-          <button class="btn" id="submit" type="submit">Submit application</button>
-          <div id="result" class="result" role="status"></div>
-        </form>
-      </section>
-
-      <aside class="card">
-        <div class="note">
-          <div class="tag">Lab note</div>
-          <p>This page is a training target for the ByteMonk least-privilege lab. Use the synthetic resume in <code>fixtures/</code>.</p>
         </div>
-        <h2>What happens when you submit</h2>
-        <ul class="flow">
-          <li><b>POST /api/applications</b>, no login</li>
-          <li>Resume saved to <b>S3</b> with the app's IAM role</li>
-          <li>PDF library parses it for a preview, <b>before any login</b></li>
-          <li>Details saved to <b>PostgreSQL</b></li>
-          <li>Recruiters sign in to review it</li>
-        </ul>
-        <p style="margin:18px 0 0;font-size:13px;color:var(--faint)">If that PDF parser had a code-execution bug, the attacker's code would run with the app's AWS permissions. Run <code>scripts/check-access</code> to see what those permissions reach.</p>
-      </aside>
-    </div>
+
+        <label for="position">Position</label>
+        <select id="position" name="position">
+          <option>Senior Software Engineer</option>
+          <option>Platform Engineer</option>
+          <option>Security Engineer</option>
+        </select>
+
+        <span class="label">Resume</span>
+        <label class="drop" id="drop" for="resume" style="margin:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+          <strong>Upload your resume</strong>
+          <span>Drag and drop or <span class="browse">browse files</span></span>
+          <span class="hint">PDF up to 2 MB</span>
+          <input id="resume" name="resume" type="file" accept="application/pdf">
+        </label>
+        <div class="filechip hidden" id="chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+          <div class="meta"><div class="fname" id="fname"></div><div class="fsize" id="fsize"></div></div>
+          <button class="iconbtn" type="button" id="remove" aria-label="Remove file">&times;</button>
+        </div>
+
+        <button class="btn block" id="submit" type="submit">Submit application</button>
+        <p class="caption">Our recruiting team will review your application.</p>
+        <div id="result" class="result" role="alert"></div>
+      </form>
+
+      <div id="done" class="done hidden">
+        <div class="check">&#10003;</div>
+        <h1 style="font-size:26px">Application received</h1>
+        <p>Reference <span class="ref" id="ref"></span>. Thanks for applying.</p>
+        <button class="btn ghost" id="again" type="button" style="margin-top:22px">Submit another application</button>
+      </div>
+    </section>
   </main>
 
-  <footer>ByteMonk Labs · demo app with synthetic data · not a real job posting</footer>
+  <footer>ByteMonk Labs demo · not a real company hiring page · do not upload real personal data</footer>
   <script src="/assets/apply.js"></script>
 </body>
 </html>
