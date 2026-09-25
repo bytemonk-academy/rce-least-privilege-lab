@@ -14,3 +14,6 @@ __pycache__/
 .vscode/
 *.iml
 .DS_Store
+
+# Local assistant output folder
+Claude outputs/

@@ -48,7 +48,7 @@ The recruiter's login protects the controller. It does not protect S3. Every S3 
 **You need:** Docker Desktop (or Docker Engine with the Compose plugin) and Git. Nothing else. Java and Python run inside containers.
 
 ```bash
-git clone <this-repo-url> rce-least-privilege-lab
+git clone https://github.com/bytemonk-academy/rce-least-privilege-lab.git
 cd rce-least-privilege-lab
 
 docker compose up -d --build     # first build downloads Maven dependencies, give it a few minutes
@@ -253,7 +253,7 @@ This is the full setup from the video: the app on EC2, credentials from the inst
    ```bash
    sudo dnf install -y docker git && sudo systemctl enable --now docker
    # install the Docker Compose plugin: https://docs.docker.com/compose/install/linux/
-   git clone <this-repo-url> && cd rce-least-privilege-lab
+   git clone https://github.com/bytemonk-academy/rce-least-privilege-lab.git && cd rce-least-privilege-lab
    export AWS_REGION=us-east-1 LAB_RESUME_BUCKET=<resume_bucket> RECRUITER_PASSWORD=<pick-one>
    sudo -E docker compose -f docker-compose.aws.yml up -d --build
    ```
